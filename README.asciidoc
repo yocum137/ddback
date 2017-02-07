@@ -1,5 +1,17 @@
-# ddback
-= MOTIVATION - 2006
+// begin header
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+:numbered:
+:toc: macro
+:toc-title: pass:[<b>Table of Contents</b>]
+// end header
+
+= Motivation - 2006
 I've got a laptop that is frequently connected to the 'net but no real place to backup my home area or the system files. Lo and behold, I had a spiffy little 80GB external USB drive and decided to look around for a nice rsync-to-disk backup utility with incremental snapshots. I found a few at link:http://www.mikerubel.org/computers/rsync_snapshots/[Mike Rubels site] as well as a lot of advice on how to use rsync to backup a system correctly.
 
 When I was running Fedora Core 4, I used bobs, Browsable Online Backup System, but it was written in PHP4 and the web UI never really worked correctly for me. By now (Dec 2006), I'm convinced this project has been orphaned, left on Source Forge to die a slow and weary death. Or maybe I'll get off my butt and fix it for PHP5.
@@ -10,4 +22,7 @@ Several hours later, ddback came into existence. It's got a main executable scri
 
 If you've got questions, comments or concerns send them my way at yocum137@gmail.com, or better yet, submit a clone this repo and submit a PR!
 
+= Who uses ddback?
+
+Certainly I do.  But, so does the link:https://twiki.opensciencegrid.org/bin/view/Accounting/GratiaServiceOperationGuide[The Gratia Accounting Project in The Open Science Grid] (see the section titled "Information on backups.")
 
