@@ -1,6 +1,6 @@
 Summary: Backup to Disk Utility
 Name: ddback
-Version: 1.0.0
+Version: 1.1
 Release: 1
 BuildArch: noarch
 License: GPL
@@ -10,7 +10,7 @@ URL: http://www.sourceforge.net/ddback-%{version}.tgz
 Vendor: Dan Yocum
 Packager: Dan Yocum <yocum@fnal.gov>
 BuildRoot: /var/tmp/ddback-%{version}
-Requires: rsync, nfs-utils, gnome-volume-manager, gconf-editor, usermode
+Requires: rsync
 
 %description 
 ddback is simple bash script which uses rsync to create incremental backups to 
@@ -51,6 +51,9 @@ make ROOT="$RPM_BUILD_ROOT" install
 
 
 %changelog
+* Tue Feb 07 2017 Dan Yocum <dyocum@redhat.com> 1.1
+ - Migrated to github from sourceforge and removed dependency on nfs-utils, user-mode, gconf-editor.
+
 * Mon Jan 05 2009 Dan Yocum <yocum@fnal.gov> 1.0.0-1
  - Added SUCCESS and ERROR messages to the log file and email reports
 
