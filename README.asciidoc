@@ -12,6 +12,7 @@ endif::[]
 // end header
 
 = Motivation - 2006
+
 I've got a laptop that is frequently connected to the 'net but no real place to backup my home area or the system files. Lo and behold, I had a spiffy little 80GB external USB drive and decided to look around for a nice rsync-to-disk backup utility with incremental snapshots. I found a few at link:http://www.mikerubel.org/computers/rsync_snapshots/[Mike Rubels site] as well as a lot of advice on how to use rsync to backup a system correctly.
 
 When I was running Fedora Core 4, I used bobs, Browsable Online Backup System, but it was written in PHP4 and the web UI never really worked correctly for me. By now (Dec 2006), I'm convinced this project has been orphaned, left on Source Forge to die a slow and weary death. Or maybe I'll get off my butt and fix it for PHP5.
