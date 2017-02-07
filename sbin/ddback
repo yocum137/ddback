@@ -1,0 +1,349 @@
+#!/bin/bash
+#
+# ddback - Dan's Disk Backup
+#
+# Script and configuration files to perform a rsync-to-disk backups with 
+# incremental snapshots.  
+#
+# Copyright (C) 2006 Dan Yocum
+# Author: Dan Yocum <yocum@fnal.gov>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+#
+# Source the configuration file
+#
+
+. /etc/sysconfig/ddback
+
+#
+# Set global variables
+#
+
+export CURRENT_DIR=$BACKUP_DIR/current
+export INCREMENTAL_DIR=$BACKUP_DIR/incremental
+export DATE=`/bin/date +%y%b%d-%I%M%p`
+export LOG_TODAY=$LOG_DIR/ddback-$DATE.log
+export LOG=$LOG_DIR/ddback.log
+export TODAY=`/bin/date +%a`
+
+#
+# Functions
+#
+
+#
+# log_entry - 	enter a message into the log using syslog format.
+#
+
+log_entry() {
+	echo "`date +'%b %d %H:%M:%S'` `hostname -s` ddback[$$]: $1" >> $LOG_TODAY
+}
+#
+# check_space - Check the amount of space available on the archive device 
+#		and compare it to the size of the *worst case scenario* 
+#		where all data would be copied.
+
+check_space() {
+	# Check backup device/fs space
+	AVAIL_SPACE=`df -B1 $BACKUP_DIR | tail -1 | awk '{print $(NF-2)}'`
+	PERCENT_FULL=`df $BACKUP_DIR | tail -1 | awk '{print $(NF-1)}' | awk -F% '{print $1}'`
+	# Check size of volume to backup
+	RSYNC_SIZE=`rsync -avn --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/ | tail -2 | grep sent | awk '{print $2}'`
+	if [ $RSYNC_SIZE -gt $AVAIL_SPACE -o $PERCENT_FULL -gt 95 ]; then
+		log_entry "ERROR: There is not enough space on $VOL to perform this snapshot."
+		log_entry "ERROR: $AVAIL_SPACE is available on $BACKUP_DIR and"
+		log_entry "ERROR: RSYNC_SIZE is the amount of $RO_VOLUME to backup."
+		log_entry "ERROR: ---OR---"
+		log_entry "ERROR: $BACKUP_DIR is $PERCENT_FULL ."
+		log_entry "ERROR: Unmounting $VOL..."
+		nfs_ro stop &> /dev/null
+		continue
+	fi
+}
+
+#
+# rotate - 	Keep this many incremental backups. First check to see if we've 
+#		reached the magic number and if so, rm the oldest one, then rotate 
+#		everything else up.
+#
+
+rotate() {
+
+	if [ ! -d $INCREMENTAL_DIR ]; then
+		mkdir -p $INCREMENTAL_DIR
+	elif [ ! `dirname $VOL` = / ]; then
+		mkdir -p $INCREMENTAL_DIR/`dirname $VOL`/
+	fi
+
+	if [ -d $INCREMENTAL_DIR/$VOL.1 ]; then
+		OLDEST=`ls -dtr $INCREMENTAL_DIR/${VOL}* | head -1`
+		OLDEST_VERSION=`echo $OLDEST | awk -F . '{print $NF}'`
+
+		# Remove the oldest incremental backup if we get to the magic number
+		if [ $OLDEST_VERSION -eq $INCREMENTS ]; then
+			rm -rf $OLDEST
+			let "OLDEST_VERSION--"
+		fi
+
+		# Move everything up a notch
+		i=$OLDEST_VERSION
+		while [ $i -ge 1 ]; 
+		do
+			mv $INCREMENTAL_DIR/$VOL.$i $INCREMENTAL_DIR/$VOL.$(($i + 1))
+			let "i--"
+		done
+	fi
+}
+
+#
+# copy_current - copy the current version to the first backup version (.1).
+#
+
+copy_current() {
+	if [ -d $CURRENT_DIR/$VOL ]; then
+		cp -al $CURRENT_DIR/$VOL $INCREMENTAL_DIR/$VOL.1
+		touch $INCREMENTAL_DIR/$VOL.1
+	fi
+}
+
+#
+# rsync_backup - do the rsync
+#
+
+rsync_backup() {
+
+	# Check to see if $VOL is mounted and exit if not
+
+	mount | grep localhost:$VOL &> /dev/null
+	if [ $? -ne 0 ]; then
+		log_entry "ERROR: $VOL is not mounted via NFS.  Exiting..."
+		exit 1
+	fi
+
+	#
+	# Don't run if we can't find $BACKUP_DIR
+	#
+
+	if [ ! -d $BACKUP_DIR ]; then
+		log_entry "ERROR: Sorry, can't find $BACKUP_DIR directory.  Exiting..."
+		exit 1
+	fi
+
+	mkdir -p $CURRENT_DIR/$VOL/
+
+	rsync -aq --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/
+	RSYNC_VAL=$?
+
+	sync
+
+}
+
+
+#
+# check_exports - check to see if the volume/dir to backup is in /etc/exports 
+#		  and add it if not.
+#
+
+check_exports() {	
+	grep $VOL /etc/exports | grep "localhost(ro,async,no_root_squash)" 
+	if [ $? -eq 1 ]; then
+		echo "$VOL	localhost(ro,async,no_root_squash)" >> /etc/exports
+	fi
+}
+
+#
+# chkconfig_nfs - check to see if the nfs daemon should be controlled by
+# ddback.
+#
+
+chkconfig_nfs() {
+	export RUNLVL=`grep ^id /etc/inittab | awk -F: '{print $2}'`
+	if [ $RUNLVL -eq 3 ]; then  
+		NFS_STATUS=`chkconfig --list nfs | awk '{print $5}' | awk -F: '{print $2}'`
+	elif [ $RUNLVL -eq 5 ]; then 
+		NFS_STATUS=`chkconfig --list nfs | awk '{print $7}' | awk -F: '{print $2}'`
+	else 
+		log_entry "ERROR: Runlevel is not 3 or 5.  Aborting."
+		exit 1
+	fi
+}
+
+#
+# nfs_ro - 	mount and unmount / over NFS as read-only
+#
+
+nfs_ro() {
+	# Check to make sure root can mount / as ro.
+
+	check_exports
+
+	case "$1" in
+		start)
+			# Check if NFS should be started.
+	
+			chkconfig_nfs
+
+			if [ "$NFS_STATUS" = "off" ]; then
+				service nfs start &> /dev/null
+			fi
+
+			if [ ! -d $RO_VOLUME ]; then
+				mkdir $RO_VOLUME
+			fi
+
+			mount localhost:$VOL $RO_VOLUME
+			;;
+		stop)
+			umount $RO_VOLUME
+
+			if [ "$NFS_STATUS" = "off" ]; then
+				service nfs stop &> /dev/null
+			fi
+			;;
+	esac
+}
+
+# 
+# mail_report -	mail the output to someone
+#
+
+mail_report() {
+
+	if [ ! -z $MAIL_TO ]; then
+		grep ERROR $LOG_TODAY &> /dev/null
+		ERR_VAL=$?
+		if [ $ERR_VAL -eq 1 ]; then
+			mail $MAIL_TO -s "SUCCESS: ddback backup report for `hostname -s` on $DATE" < $LOG_TODAY
+		else
+			mail $MAIL_TO -s "ERROR: ddback backup report for `hostname -s` on $DATE" < $LOG_TODAY
+		fi
+	fi
+}
+
+#
+# A nice, neat function of the above functions
+#
+
+run_backup() {
+
+	# Create log dir if it doesn't exist.
+
+	if [ ! -d $LOG_DIR ]; then
+		mkdir $LOG_DIR
+	fi
+
+	# Mount the / filesystem over nfs as read-only
+
+	log_entry "Mounting $VOL as read-only..."
+	nfs_ro start &> /dev/null
+
+	# Check to make sure we have enough space to perform the backup
+	# to $BACKUP_DIR
+	check_space
+
+	# Rotate and copy current to first backup increment
+	# only if INCREMENTS > 0
+
+	if [ $INCREMENTS -gt 0 ]; then
+		log_entry "Rotating incrementals..."
+		rotate
+
+		log_entry "Copying current to 1st incremental..."
+		copy_current
+	fi
+
+	# Do the rsync backups
+
+	log_entry "Performing rsync backup..."
+	rsync_backup
+ 
+	# Unmount the / filesystem 
+
+	log_entry "Unmounting $VOL..."
+	nfs_ro stop &> /dev/null
+	if [ $RSYNC_VAL -eq 0 ]; then
+		log_entry "SUCCESS: Backup of $VOL has completed."
+	else
+		log_entry "ERROR: Backup of $VOL has completed with errors."
+		log_entry "ERROR: Mount ${VOL} on ${RO_VOLUME}/ read-only"
+		log_entry "ERROR: and run the following command, manually:"
+		log_entry "ERROR: rsync -av --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/"
+	fi
+}
+
+
+#
+# Main script
+#
+
+log_entry "ddback report for $DATE..."
+
+#
+# Don't run if we're not root
+#
+
+if [ $UID -ne 0 ]; then 
+	log_entry "ERROR: Sorry, must be root to run ddback.  Exiting..."
+	exit 1  
+fi
+
+#
+# Don't run if we can't find $BACKUP_DIR
+#
+
+if [ ! -d $BACKUP_DIR ]; then
+	log_entry "ERROR: Sorry, can't find $BACKUP_DIR directory.  Exiting..."
+	exit 1
+fi
+
+#
+# Parse the /etc/ddback file and start the run...
+#
+
+exec < $VOL_CONFIG
+while read line
+do
+	echo $line | grep  '^/[a-zA-Z0-9]' &> /dev/null
+	if [ $? -eq 0 ]; then
+		VOL=`echo $line | awk '{print $1}'`
+		INTERVAL=`echo $line | awk '{print $2}'`
+		DAY=`echo $line | awk '{print $3}'`
+		INCREMENTS=`echo $line | awk '{print $4}'`
+		EXCLUDES=`echo $line | awk '{print $5}'`
+
+		# Check the increment (daily, weekly, etc.) and act accordingly
+
+		if [ $INTERVAL = daily ]; then
+			run_backup
+		elif [ $INTERVAL = weekly ]; then
+			if [ $DAY = $TODAY ]; then
+				run_backup
+			fi
+		elif [ $INTERVAL = monthly ]; then
+			if [ $TODAY = Mon -a `date +%d` -le 7 ]; then
+				run_backup
+			fi
+		fi
+	fi
+done
+
+# Send an email report and merge the log.
+
+mail_report
+cat $LOG_TODAY >> $LOG
+rm -f $LOG_TODAY
+
+# Lastly, report to everyone that the backup has completed:
+# wall "ddback backup has completed for $DATE."

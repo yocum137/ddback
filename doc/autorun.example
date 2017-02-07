@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# ddback autorun file
+#
+# Place this file  and make it executable in the root directory of the external 
+# drive if you want ddback to be run automatically when the drive is mounted. 
+# See the INSTALL file for more complete instructions.
+
+/usr/bin/ddback

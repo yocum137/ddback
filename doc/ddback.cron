@@ -1,0 +1,11 @@
+#!/bin/bash
+
+mount /dev/sdb1 /media/disk
+
+if [ $? -eq 0 ]; then
+	/sbin/ddback
+else
+	mail yocum@fnal.gov -s "ddbackup on garnet failed" < /dev/null
+fi
+
+umount /media/disk

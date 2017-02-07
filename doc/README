@@ -1,0 +1,57 @@
+
+ddback - Dan's Disk Backup
+
+A script with configuration files to perform a rsync-to-disk backups with 
+incremental snapshots.  
+
+Copyright (C) 2006 Dan Yocum
+Author: Dan Yocum <yocum@fnal.gov>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+For installation and configuration information read the INSTALL guide.
+
+MOTIVATION
+
+I've got a laptop that is frequently connected to the 'net but no real place to 
+backup my home area or the system files.  Lo and behold, I had a spiffy little
+80GB external USB drive and decided to look around for a nice rsync-to-disk backup
+utility with incremental snapshots.  I found a few at Mike Rubels site:
+
+http://www.mikerubel.org/computers/rsync_snapshots/ 
+
+as well as a lot of advice on how to use rsync to backup a system correctly.
+
+When I was running Fedora Core 4, I used bobs, Browsable Online Backup System,
+but it was written in PHP4 and the web UI never really worked correctly for me.  By
+now (Dec 2006), I'm convinced this project has been orphaned, left on sourceforge to
+die a slow and weary death.  Or maybe I'll get off my butt and fix it for PHP5.
+
+When I upgraded to FC6 and I went searching again and even looked at the scripts
+Mike lists on his site, but none of them were as clean as I wanted them to be or
+they were in languages I didn't feel like messing with.  Dang it!  This should be 
+*easy.*  This should be in bash!  I thumbed my nose at the perl and python scripts, 
+I bit the bullet, put my laziness on hold, wound up my hubris and began scripting.
+
+Several hours later, ddback came into existence.  It's got a main executable.  It's
+got 2 config files and I even figured out how to make it run automatically with 
+autorun when I plug the USB drive in.  Pretty cool.
+
+If you've got questions, comments or concerns send them my way at yocum@fnal.gov.
+
+But, caveat emptor: you get what you pay for.  I haven't rigorously tested this
+thing, yet.  What works for me may not work for you, and if you lose any data, don't
+blame me.  Capish?
+

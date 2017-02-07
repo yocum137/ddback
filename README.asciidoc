@@ -1,0 +1,13 @@
+# ddback
+= MOTIVATION - 2006
+I've got a laptop that is frequently connected to the 'net but no real place to backup my home area or the system files. Lo and behold, I had a spiffy little 80GB external USB drive and decided to look around for a nice rsync-to-disk backup utility with incremental snapshots. I found a few at link:http://www.mikerubel.org/computers/rsync_snapshots/[Mike Rubels site] as well as a lot of advice on how to use rsync to backup a system correctly.
+
+When I was running Fedora Core 4, I used bobs, Browsable Online Backup System, but it was written in PHP4 and the web UI never really worked correctly for me. By now (Dec 2006), I'm convinced this project has been orphaned, left on Source Forge to die a slow and weary death. Or maybe I'll get off my butt and fix it for PHP5.
+
+When I upgraded to FC6 and I went searching again and even looked at the scripts Mike lists on his site, but none of them were as clean as I wanted them to be or they were in languages I didn't feel like messing with. Dang it! This should be *easy.* This should be in bash! I thumbed my nose at the perl and python scripts , I bit the bullet, put my laziness on hold, wound up my hubris and began scripting.
+
+Several hours later, ddback came into existence. It's got a main executable script. It's got 2 config files and I even figured out how to make it run automatically with autorun when I plug the USB drive in. Pretty cool.
+
+If you've got questions, comments or concerns send them my way at yocum137@gmail.com, or better yet, submit a clone this repo and submit a PR!
+
+

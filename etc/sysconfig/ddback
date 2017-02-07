@@ -1,0 +1,23 @@
+# Config file for ddback
+#
+# BACKUP_DIR is the "root" dir of the backups. 
+
+HOSTNAME=`/bin/hostname`
+BACKUP_DIR=/media/disk/ddback/$HOSTNAME
+
+# File containing the info on the volumes to backup
+
+VOL_CONFIG=/etc/ddback.conf
+
+# Where to mount the volumes to be backed up as read-only
+
+RO_VOLUME=/mnt/ro_volume
+
+# Log directory location
+
+LOG_DIR=/var/log/ddback
+
+# Mail the logs to someone.  If string is empty then logs aren't mailed.
+
+MAIL_TO="root"
+

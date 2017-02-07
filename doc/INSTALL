@@ -1,0 +1,108 @@
+=========================================================================
+ddback: Dan's Disk BACKup - an rsync to disk backup utility supporting 
+	incremental snapshots.
+=========================================================================
+
+Copyright (C) 2006 Dan Yocum
+Author: Dan Yocum <yocum@fnal.gov>
+
+============
+REQUIREMENTS
+============
+
+rsync
+nfs-utils
+
+(optionally)
+hal
+gnome-config
+gnome-volume-manager
+
+============
+INSTALLATION 
+============
+
+OPTION #1
+=========
+
+Get the rpm, install it, configure it (See CONFIGURATION, below), run it.  Done.
+
+
+OPTION #2
+=========
+
+Get the tarball, unpack it, run 'make install' to install everything, configure it 
+(See CONFIGURATION, below), run it.  Done.
+
+If you don't want/have autorun capability, then run 'make install-core; make 
+install-doc'.  
+
+=============
+CONFIGURATION
+=============
+
+METHOD #1 - simple, straightforward, run-by-hand, no autorun.
+-------------------------------------------------------------
+
+1) Edit /etc/sysconfig/ddback and set the environment variables for your system.  
+
+   The BACKUP_DIR is where your removable media gets mounted by hal (if you're using
+   a Red Hat based distro with Gnome).
+
+   RO_VOLUME is the read-only NFS mount point that ddback will mount so it can do 
+   the backups.  Oh, you'll need nfs-utils installed (if you install the rpm, it 
+   should have told you this).
+
+2) Edit /etc/ddback.conf and add the volumes you want to back up.  Use the examples
+   as a guideline.
+
+3) Edit the appropriate excludes file(s) in /etc/ddback.d/ and add the files you
+   don't want backed up.  For instance, in the home-excludes I have 'Cache' and 
+   '.beagle', so my Mozilla Cache files are skipped as well as the beagle index 
+   files.
+
+4) Plug in your USB drive, make sure it's mounted where you think it is (i.e., 
+   run 'df -l').
+
+5) Login as root and run /sbin/ddback.
+
+6) Watch the log file grow (i.e., 'tail -f /var/log/ddback/ddback<DATE>.log').
+
+
+
+METHOD #2 -  Fancy shmancy, automatic on drive insertion (for Gnome desktops).
+------------------------------------------------------------------------------
+
+This assumes you either installed the rpm package or did a 'make install' to install
+all the components.  
+
+Do all the configuration stuff in METHOD #1, first.  
+
+1) If you don't have the gnome-config and gnome-volume-manager rpm packages 
+   installed, install them (i.e., 'yum install gnome-config gnome-volume-manager').
+
+2) Run 'gnome-config' and browse to schemas -> desktop -> gnome.  Select
+   "volume_manager", select "autorun_path," right click and select 'Edit,' add
+   a "string" and enter this in the entry field (w/o the single quotes):
+   '.autorun:autorun:autorun.sh'
+
+	NB: On FC6, I had to remove the autorun_path schema entry because it wasn't
+	edittable, then re-add it setting it up as above.  Make sure you name it
+	correctly (i.e., autorun_path).
+
+3) Mount your USB drive and copy the autorun.example to /path/to/usb-drive/autorun.
+   Then right click on the drive on your desktop, click the "drive" tab, expand the
+   "settings" section and add "exec" to the mount options.  
+
+4) Unmount the drive, unplug the drive, plug the drive back in and you should be 
+   prompted if you would like to allow autorun to run.  Then you should be prompted
+   for the root password.
+
+5) Watch the log file grow (i.e., 'tail -f /var/log/ddback/ddback<DATE>.log').
+
+===============
+RESTORING FILES
+===============
+
+What could be easier?  They're in $BACKUP_DIR/$HOSTNAME/{current,incrmental}/$VOL 
+directories.  Go find what you want, and copy it back to where it came from.

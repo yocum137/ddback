@@ -1,0 +1,10 @@
+# Logrotate file for ddback RPM
+ 
+/var/log/ddback/ddback.log {
+	missingok
+	compress
+	notifempty
+	daily
+	rotate 30 
+	create 0600 root root
+}
