@@ -60,15 +60,15 @@ check_space() {
 	AVAIL_SPACE=`df -B1 $BACKUP_DIR | tail -1 | awk '{print $(NF-2)}'`
 	PERCENT_FULL=`df $BACKUP_DIR | tail -1 | awk '{print $(NF-1)}' | awk -F% '{print $1}'`
 	# Check size of volume to backup
-	RSYNC_SIZE=`rsync -avn --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/ | tail -2 | grep sent | awk '{print $2}'`
+	RSYNC_SIZE=`rsync -avn --delete --exclude-from=$EXCLUDES $VOL/ ${CURRENT_DIR}${VOL}/ | tail -2 | grep sent | awk '{print $2}' | perl -pe 's/,//g;'`
 	if [ $RSYNC_SIZE -gt $AVAIL_SPACE -o $PERCENT_FULL -gt 95 ]; then
 		log_entry "ERROR: There is not enough space on $VOL to perform this snapshot."
 		log_entry "ERROR: $AVAIL_SPACE is available on $BACKUP_DIR and"
-		log_entry "ERROR: RSYNC_SIZE is the amount of $RO_VOLUME to backup."
+		log_entry "ERROR: RSYNC_SIZE is the amount of $VOL to backup."
 		log_entry "ERROR: ---OR---"
 		log_entry "ERROR: $BACKUP_DIR is $PERCENT_FULL ."
 		log_entry "ERROR: Unmounting $VOL..."
-		nfs_ro stop &> /dev/null
+		#nfs_ro stop &> /dev/null
 		continue
 	fi
 }
@@ -126,11 +126,11 @@ rsync_backup() {
 
 	# Check to see if $VOL is mounted and exit if not
 
-	mount | grep localhost:$VOL &> /dev/null
-	if [ $? -ne 0 ]; then
-		log_entry "ERROR: $VOL is not mounted via NFS.  Exiting..."
-		exit 1
-	fi
+	#mount | grep localhost:$VOL &> /dev/null
+	#if [ $? -ne 0 ]; then
+	#	log_entry "ERROR: $VOL is not mounted via NFS.  Exiting..."
+	#	exit 1
+	#fi
 
 	#
 	# Don't run if we can't find $BACKUP_DIR
@@ -143,7 +143,7 @@ rsync_backup() {
 
 	mkdir -p $CURRENT_DIR/$VOL/
 
-	rsync -aq --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/
+	rsync -aq --delete --exclude-from=$EXCLUDES $VOL/ ${CURRENT_DIR}${VOL}/
 	RSYNC_VAL=$?
 
 	sync
@@ -193,7 +193,7 @@ nfs_ro() {
 		start)
 			# Check if NFS should be started.
 	
-			chkconfig_nfs
+			#chkconfig_nfs
 
 			if [ "$NFS_STATUS" = "off" ]; then
 				service nfs start &> /dev/null
@@ -246,8 +246,8 @@ run_backup() {
 
 	# Mount the / filesystem over nfs as read-only
 
-	log_entry "Mounting $VOL as read-only..."
-	nfs_ro start &> /dev/null
+	#log_entry "Mounting $VOL as read-only..."
+	#nfs_ro start &> /dev/null
 
 	# Check to make sure we have enough space to perform the backup
 	# to $BACKUP_DIR
@@ -271,15 +271,14 @@ run_backup() {
  
 	# Unmount the / filesystem 
 
-	log_entry "Unmounting $VOL..."
-	nfs_ro stop &> /dev/null
+	#log_entry "Unmounting $VOL..."
+	#nfs_ro stop &> /dev/null
 	if [ $RSYNC_VAL -eq 0 ]; then
 		log_entry "SUCCESS: Backup of $VOL has completed."
 	else
 		log_entry "ERROR: Backup of $VOL has completed with errors."
-		log_entry "ERROR: Mount ${VOL} on ${RO_VOLUME}/ read-only"
-		log_entry "ERROR: and run the following command, manually:"
-		log_entry "ERROR: rsync -av --delete --exclude-from=$EXCLUDES $RO_VOLUME/ ${CURRENT_DIR}${VOL}/"
+		log_entry "ERROR: Run the following command, manually:"
+		log_entry "ERROR: rsync -av --delete --exclude-from=$EXCLUDES $VOL/ ${CURRENT_DIR}${VOL}/"
 	fi
 }
 
@@ -341,7 +340,7 @@ done
 
 # Send an email report and merge the log.
 
-mail_report
+# mail_report
 cat $LOG_TODAY >> $LOG
 rm -f $LOG_TODAY
 
